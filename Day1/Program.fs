@@ -11,10 +11,9 @@ let rec fuelDivider (currentFuel: float) (state : int) : int =
 
 [<EntryPoint>]
 let main argv =
-    filereader "data.txt" |> List.fold(fun state item ->
-        (fuelDivider item 0) + state
-    ) 0
-    |>  printf "%A"
+    filereader "data.txt"
+    |> List.fold(fun state item ->(fuelDivider item 0) + state) 0
+    |> printf "%A"
 
     0 // return an integer exit code
 
