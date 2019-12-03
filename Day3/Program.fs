@@ -16,50 +16,69 @@ let splitDirection (direction: string) =
     let b = direction.[1..direction.Length - 1] |> int
     let a: string = string direction.[0]
     (a, b)
-    
 
-let plotMap (cX,cY) (direction: string) = 
+
+let plotMap (cX,cY,cI) (direction: string) =
     let dir,dist = splitDirection direction
     match dir with
-    | "R" -> [cX..cX+dist] |> List.map(fun x -> (x,cY))
-    | "L" -> [(-dist+cX)..cX] |> List.rev |> List.map(fun x -> (x,cY))
-    | "U" -> [cY..cY+dist] |> List.map(fun x -> (cX,x))
-    | "D" -> [(-dist+cY)..cY] |> List.rev |> List.map(fun x -> (cX,x))
+    | "R" -> [cX..cX+dist] |> List.mapi(fun i x -> (x,cY, i - 1 + cI + 1))
+    | "L" -> [(-dist+cX)..cX] |> List.rev |> List.mapi(fun i x -> (x,cY, i - 1 + cI + 1))
+    | "U" -> [cY..cY+dist] |> List.mapi(fun i x -> (cX,x, i - 1 + cI + 1))
+    | "D" -> [(-dist+cY)..cY] |> List.rev |> List.mapi(fun i x -> (cX,x, i - 1 + cI + 1))
     |_-> failwith "Okänt tecken"
 
-
+let existsMoreThanOnce (l: List<int*int*int>) =
+    l |> List.map(fun (x1,x2,x3) ->
+        let a = l |> List.filter(fun (y1,y2,_) -> x1 = y1 && x2 = y2)
+        if(a.Length > 1)
+        then
+            let m = a |> List.minBy(fun (x,y,z) -> z)
+            m
+        elif (a.Length = 1) then a.Head
+        else failwith "asdasd"
+    )
 
 [<EntryPoint>]
 let main argv =
     let m: Map<int,int> = Map.empty
-    let firstWireMap = 
+
+    let a =
         (wire1.Split ',' )
         |> List.ofSeq
-        |> List.fold(fun (state : (int * int) list) (x:string) -> 
+        |> List.fold(fun (state : (int * int * int) list) (x:string) ->
             let t = state.[ state.Length - 1]
             let l = (plotMap t x)
-            state @ l
-        ) [(0,0)]
-        |> Set.ofList
+            let lastVale = l.[l.Length-1]
+            (state @ l)
+        ) ([(0,0,0)])
+    let firstWireMap =
+        a //|> existsMoreThanOnce
+        |> List.map(fun (x,y,z) -> (x,y),z )
+        |> Map.ofList
 
     let mutable dist = []
+    let mutable steps = []
 
     let res2 =
         wire2.Split ','
         |> List.ofSeq
-        |> List.fold(fun (state : (int * int) list) (x:string) -> 
+        |> List.fold(fun (state : (int * int * int) list) (x:string) ->
             let t = state.[ state.Length - 1]
             let l = (plotMap t x)
-            l |> List.iter(fun y ->
-                if(firstWireMap.Contains y) 
+            l |> List.iter(fun (x,y,z) ->
+                if(firstWireMap.ContainsKey (x,y))
                 then
-                    let d =  abs(0 - (y |> fst)) +  (0 - (y |> snd))
-                    dist <- dist @ [d]                   
+                    let key = (x,y)
+                    let wire1steps = (firstWireMap.TryGetValue key) |> snd
+                    let d =  abs(0 - x) +  abs(0 - y)
+                    steps <- steps @ [wire1steps + z]
+                    dist <- dist @ [d]
             )
             state @ l
-        ) [(0,0)]
+        ) [(0,0,0)]
 
-    dist <- dist |> List.sort
+    steps <- steps |> List.sort
     printfn "%A" dist
+    printfn "%A" (steps |> List.tail |> List.head)
     printfn "Hello World from F#!"
     0 // return an integer exit code
