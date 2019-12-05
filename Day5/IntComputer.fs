@@ -2,26 +2,28 @@ namespace Day5
 open System
 open System.IO
 module IntComputer =
-    let updateList (index : int) (value : int) (array: List<int>) = 
+    let updateList (index : int) (value : int) (array: List<int>) =
         array |> List.mapi(fun i v -> if i=index then value else v)
 
-    let filereader (path : string) : List<int> =
-        List.ofSeq(File.ReadLines(path)).[0].Split ',' 
-        |> List.ofSeq
-        |> List.map(int)
+    let getValue (state: List<int>) (index: int) (mode) =
+        match mode with
+        | 0 -> state.[state.[index]]
+        | 1 -> state.[index]
+        | _ -> (sprintf "Faulty mode: %i" mode) |> failwith
 
-    let rec optcodeReader (state: List<int>) (index: int) : List<int> = 
-        let optcode = state.[index]
+    let rec optcodeReader (state: List<int>) (index: int) : List<int> =
+        let optcode = state.[index] % 100
+        let mode = state.[index] / 100
         match optcode with
-        | 1 -> 
-            let v = state.[state.[index + 1]] + state.[state.[index + 2]]
+        | 1 ->
+            let v = (getValue state (index + 1) (mode % 10)) + (getValue state (index + 2) (mode / 10))
             let newState = updateList state.[index + 3] v state
             optcodeReader newState (index + 4)
         | 2 ->
-            let v = state.[state.[index + 1]] * state.[state.[index + 2]]
+            let v = (getValue state (index + 1) (mode % 10)) * (getValue state (index + 2) (mode / 10))
             let newState = updateList state.[index + 3] v state
-            optcodeReader newState (index + 2)
-        | 3 -> 
+            optcodeReader newState (index + 4)
+        | 3 ->
             let input = Int32.Parse(System.Console.ReadLine())
             let i = state.[index + 1]
             let newState = updateList i input state
@@ -29,29 +31,38 @@ module IntComputer =
         | 4 ->
             printfn "opt4: %A" state.[state.[index + 1]]
             optcodeReader state (index + 2)
-        | 99 ->
-            state
-        | _-> failwith (sprintf "Error: fel värde på optcode %i" optcode)
+        | 5 ->
+            if (getValue state (index + 1) (mode % 10)) <> 0
+            then (getValue state (index + 2) (mode / 10)) |> optcodeReader state
+            else optcodeReader state (index + 3)
+        | 6 ->
+            if (getValue state (index + 1) (mode % 10)) = 0
+            then (getValue state (index + 2) (mode / 10)) |> optcodeReader state
+            else optcodeReader state (index + 3)
+        | 7 ->
+            if (getValue state (index + 1) (mode % 10)) < (getValue state (index + 2) (mode / 10))
+            then optcodeReader (updateList state.[index + 3] 1 state) (index + 4)
+            else optcodeReader (updateList state.[index + 3] 0 state) (index + 4)
+        | 8 ->
+            if (getValue state (index + 1) (mode % 10)) = (getValue state (index + 2) (mode / 10))
+            then optcodeReader (updateList state.[index + 3] 1 state) (index + 4)
+            else optcodeReader (updateList state.[index + 3] 0 state) (index + 4)
+        | 99 -> state
+        | _-> failwith (sprintf "Error: faluty optcode %i" optcode)
 
     let rec findValue (list: List<int>) baseValue currentValue toValue =
         if currentValue < toValue then
             let newInstr = list |> updateList 1 baseValue |> updateList 2 currentValue
-            if optcodeReader newInstr 0 |> List.head = 19690720 
+            if optcodeReader newInstr 0 |> List.head = 19690720
             then Some(baseValue,currentValue)
             else findValue list baseValue (currentValue+1) toValue
         elif baseValue + 1 < toValue then
             findValue list (baseValue+1) 0 toValue
         else None
 
-    let run (path : string)=
-        //let instructions = filereader path
-        //let inst1 = instructions |> updateList 1 12 |> updateList 2 2
-        let inst2 = [3;0;4;0;99]
-        optcodeReader inst2 0 |> printfn "First resut: %A"
-
-        // let foundPair = (findValue instructions 0 0 (instructions.Length - 4))
-        // match foundPair with 
-        // | Some (noun,verb) -> 
-        //     printfn "Pair found: %i %i" noun verb 
-        //     printfn "Value: %i" (100 * noun + verb)
-        // | _-> printfn "Nu pair found"
+    let run (data : string)=
+        let inst1 = (data.Split ',') |> List.ofSeq |> List.map(int)
+        let inst2 = [1002;4;3;4;33]
+        let inst3 = [3;9;8;9;10;9;4;9;99;-1;8]
+        let inst4= [3;3;1108;-1;8;3;4;3;99]
+        optcodeReader inst1 0 |> ignore
