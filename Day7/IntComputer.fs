@@ -11,7 +11,7 @@ module IntComputer =
         | 1 -> state.[index]
         | _ -> (sprintf "Faulty mode: %i" mode) |> failwith
 
-    let rec optcodeReader (state: List<int>) (input: List<int>) (output: int) (index: int) : List<int>*int =
+    let rec optcodeReader (state: List<int>) (input: List<int>) (output: int) (index: int) =
         let optcode = state.[index] % 100
         let mode = state.[index] / 100
         match optcode with
@@ -24,10 +24,12 @@ module IntComputer =
             let newState = updateList state.[index + 3] v state
             optcodeReader newState input output (index + 4)
         | 3 ->
-            let readInput = input.Head
-            let i = state.[index + 1]
-            let newState = updateList i readInput state
-            optcodeReader newState input.Tail output (index + 2)
+            if input.IsEmpty then state,output,index, false
+            else
+                let readInput = input.Head
+                let i = state.[index + 1]
+                let newState = updateList i readInput state
+                optcodeReader newState input.Tail output (index + 2)
         | 4 ->
             //printfn "opt4: %A" state.[state.[index + 1]]
             optcodeReader state input state.[state.[index + 1]] (index + 2)
@@ -47,22 +49,17 @@ module IntComputer =
             if (getValue state (index + 1) (mode % 10)) = (getValue state (index + 2) (mode / 10))
             then optcodeReader (updateList state.[index + 3] 1 state) input output (index + 4)
             else optcodeReader (updateList state.[index + 3] 0 state) input output (index + 4)
-        | 99 -> state, output
+        | 99 -> state,output,index,true
         | _-> failwith (sprintf "Error: faluty optcode %i" optcode)
-
-    // let rec findValue (list: List<int>) baseValue currentValue toValue =
-    //     if currentValue < toValue then
-    //         let newInstr = list |> updateList 1 baseValue |> updateList 2 currentValue
-    //         if optcodeReader newInstr 0 |> List.head = 19690720
-    //         then Some(baseValue,currentValue)
-    //         else findValue list baseValue (currentValue+1) toValue
-    //     elif baseValue + 1 < toValue then
-    //         findValue list (baseValue+1) 0 toValue
-    //     else None
 
     let run (data : string) input =
         let inst1 = (data.Split ',') |> List.ofSeq |> List.map(int)
         let inst2 = [1002;4;3;4;33]
         let inst3 = [3;9;8;9;10;9;4;9;99;-1;8]
         let inst4= [3;3;1108;-1;8;3;4;3;99]
-        optcodeReader inst1 input 0 0 |>  snd
+        let state, output, _,_= optcodeReader inst1 input 0 0
+        output
+
+    let runSecond (state : List<int>) index input oldOutput=
+        optcodeReader state input oldOutput index
+
