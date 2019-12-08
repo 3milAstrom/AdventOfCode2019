@@ -13,11 +13,8 @@ type Image = Map<int*int,Pixel>
 let filereader (path : string) =
     List.ofSeq(File.ReadLines(path)) |> List.head
 
-let dataTransmition = filereader "data.txt"
-
-let testDataTransmition = "123456712012"
-
-let testDataTransmition2 = "0222112222120000"
+let updateList (index : int) (value : 'a) (array: List<'a>) =
+    array |> List.mapi(fun i v -> if i=index then value else v)
 
 let dataToStringList (data: string) =
     [0..(data.Length - 1)] |> List.map(fun x -> data.[x] |> string)
@@ -39,64 +36,46 @@ let rec createLayers(data: List<string>) (width: int) (height: int) (layers: Lis
         createLayers data.[(pickSize)..(data.Length - 1)] width height (layers @ [layer])
     | x -> failwith (sprintf "createLayers: Fel antal tecken kvar %i" x.Length)
 
+let newLeast leastZeroes hd zeroes=
+    match leastZeroes with
+    | Some (l,_) -> if zeroes < l then Some (zeroes,hd) else leastZeroes
+    | None -> Some (zeroes,hd)
+
 let rec findLeastZeroes (layers: List<Layer>) (leastZeroes: Option<int*Layer>) =
     match layers with
     | [hd] ->
-        let zeroes = hd |> List.fold(fun state elem -> state + (elem |> List.filter(fun x -> x = "0") |> List.length) ) 0
-        match leastZeroes with
-        | Some (l,_) ->
-            if zeroes < l
-            then Some (zeroes,hd)
-            else leastZeroes
-        | None -> Some (zeroes,hd)
+        hd |> List.fold(fun state elem -> state + (elem |> List.filter(fun x -> x = "0") |> List.length) ) 0
+           |> newLeast leastZeroes hd
     | hd::tail ->
         let zeroes = hd |> List.fold(fun state elem -> state + (elem |> List.filter(fun x -> x = "0") |> List.length) ) 0
-        let newLeast =
-            match leastZeroes with
-            | Some (l,_) ->
-                if zeroes < l
-                then Some (zeroes,hd)
-                else leastZeroes
-            | None -> Some (zeroes,hd)
-        findLeastZeroes tail newLeast
+        findLeastZeroes tail (newLeast leastZeroes hd zeroes)
     |_-> failwith "asd"
 
-let setImagePixel x y pixel (image: Image) =
-    match image.TryFind (x,y) with
-    | Some value ->
-        if value.IsNone
-        then image.Add((x,y), Some pixel)
-        else image
-    | None -> image.Add((x,y), Some pixel)
+let uppdateraImage (image: Layer) (lager: Layer) =
+    let mutable newImage = image
+    lager |> List.iteri(fun i x ->
+        x |> List.iteri(fun j y ->
+            let value = newImage.[i].[j]
+            if value = "2" && y <> "2"
+            then newImage <- updateList i (updateList j y newImage.[i]) newImage
+        )
+    )
+    newImage
 
-let rec checkRow (rows: List<Row>) (currentRow: int) (image: Image) =
-    match rows with
+let rec createImage (image: Layer) (remainingLayers: List<Layer>) =
+    match remainingLayers with
     | [hd] ->
-        let mutable im = image
-        hd |> List.iteri(fun i x -> if x <> "2" then im <- setImagePixel i currentRow x image )
-        im
+        uppdateraImage image hd
     | hd::tail ->
-        let mutable im = image
-        hd |> List.iteri(fun i x -> if x <> "2" then im <- setImagePixel i currentRow x image )
-        checkRow tail (currentRow + 1) im
-    |_-> failwith "checkRow"
-
-
-let rec createImage (layers: List<Layer>) (image: Image) =
-    match layers with
-    | [hd] -> checkRow hd 0 image
-    | hd::tail ->
-        let im = checkRow hd 0 image
-        createImage tail im
-    |_-> failwith "createImage"
+        let newImage = uppdateraImage image hd
+        createImage newImage tail
+    | _-> failwith ""
 
 [<EntryPoint>]
 let main argv =
+    let dataTransmition = filereader "data.txt"
     let width = 25
     let height = 6
-
-    let testWidth = 3
-    let testHeight = 2
 
     let d: List<Layer> = createLayers (dataTransmition |> dataToStringList) width height []
     let d2 = findLeastZeroes d None
@@ -105,32 +84,13 @@ let main argv =
 
     printfn "Part1: %i" (numberofones * numberoftwoes)
 
-    let w = [0..(width - 1)]
-    let h = [0..(height - 1)]
+    let topLayer = d.Head
+    let image = createImage topLayer d.Tail
 
-    let m =
-        h |> List.fold(fun (state: Map<(int*int),Option<string>>) elem ->
-            let l = w |> List.map(fun x -> (x,elem))
-            let asd =
-                l |> List.fold(fun (s: Map<(int*int),Option<string>>) e ->
-                    s.Add(e,None)
-                ) state
-            asd
-        ) Map.empty
-
-    let part2 =
-        createImage d m
-        |> Map.toList
-        |> List.map(fun (_,v) -> v)
-        |> List.splitInto(6)
-        |> List.iter(fun x ->
-            x |> List.iter(fun y ->
-                match y with
-                | Some v -> if v = "0" then printf "O" else printf " "
-                | None -> printf " "
-            )
-            printfn ""
-        )
+    image |> List.iter(fun x ->
+        x |> List.iter(fun y -> if y = "1" then printf "#" else printf " ")
+        printfn ""
+    )
 
     printfn "Hello World from F#!"
     0 // return an integer exit code
