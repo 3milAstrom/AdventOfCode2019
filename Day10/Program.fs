@@ -2,18 +2,6 @@
 
 open System
 open System.IO
-open System.Numerics
-
-let rec gcd (a: float32) (b: float32) =
-    let aa,bb = abs a, abs b
-    if aa = (0 |> float32) then bb
-    elif bb = (0 |> float32) then aa
-    elif aa > bb then gcd (aa % bb) bb
-    else gcd aa (bb % aa)
-
-let normalize (point: Vector2) : Vector2=
-    let g = gcd point.X point.Y
-    Vector2 ((point.X / g),(point.Y / g))
 
 let getAsteroids data=
     List.ofSeq(File.ReadLines(data))
@@ -21,30 +9,41 @@ let getAsteroids data=
         x.ToCharArray()
         |> List.ofSeq
         |> List.mapi(fun j y ->
-            (j |> float32,i |> float32),(y |> string)
+            (j,i),(y |> string)
         )
-        |> List.filter(fun (k,v) -> v = "#")
-        |> List.map(fun (k,v) -> Vector2 ((k |> fst),(k |> snd)))
+        |> List.filter(fun (k,v) -> v = "#") |> List.map(fun (k,_) -> k)
     ) |> List.collect(id)
+
+
+let getAngle ((x1,y1): (int*int)) ((x2,y2): (int*int)) =
+    let deltaX = (x2 - x1) |> float
+    let deltaY = (y2 - y1) |> float
+    Math.Atan2(deltaY, deltaX);
+
+let updateMap (map: Map<float,List<int*int>>) (point: (int*int)) (angle: float)=
+    match map.TryFind angle with
+    | Some v -> map.Add(angle, v @ [point])
+    | None -> map.Add(angle, [point])
+
 
 [<EntryPoint>]
 let main argv =
     let asteroids = getAsteroids "data.txt"
-    let r =
-        asteroids
-        |> List.map(fun a ->
-            let mutable tmp = []
-            asteroids |> List.iter(fun b ->
-                if a<>b
-                then
-                    let l = (b-a) |> Vector2.Normalize
-                    tmp <- (tmp @ [l |> normalize])
-            )
-            a,tmp.Length
+    let asd =
+        asteroids |> List.map(fun a ->
+            let map =
+                asteroids |> List.fold(fun state b ->
+                    if a<>b
+                    then getAngle a b |> updateMap state b
+                    else state
+                ) Map.empty
+            a,map
         )
+    let a =
+        asd |> List.map(fun (pos,map) ->
+            pos,map |> Map.toList |> List.map(fun (_,v) -> v)
+        ) |> List.maxBy(fun (pos,c) -> c.Length)
 
-
-    printfn "%A" r
     printfn "asdasd"
 
     0 // return an integer exit code
