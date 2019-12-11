@@ -8,14 +8,14 @@ let data = "3,8,1005,8,328,1106,0,11,0,0,0,104,1,104,0,3,8,1002,8,-1,10,1001,10,
 
 type Tile = {painted: int; color: int}
 
-let turnLeft direction = 
+let turnLeft direction =
     match direction with
     | Up -> Left
     | Left -> Down
     | Down -> Right
     | Right -> Up
 
-let turnRight direction = 
+let turnRight direction =
     match direction with
     | Up -> Right
     | Right -> Down
@@ -29,46 +29,64 @@ let stepOne (x,y) direction =
     | Down -> (x,y - 1)
     | Left -> (x - 1,y)
 
-
-let getColor (painted: Map<int*int,Tile>) (point: int*int) =
+let getColor (painted: Map<int*int,Tile>) point =
     match painted.TryFind point with
-    | Some tile -> tile.color
+    | Some v -> v.color
     | None -> 0
 
 let paintAndReturnNextPosition (painted: Map<int*int,Tile>) ((x,y):int*int) (color: int) (direction: int) (droneDirection: Direction)=
-    let newPainted = 
+    let newPainted =
         match painted.TryFind (x,y) with
-        | Some tile -> 
+        | Some tile ->
             if tile.color <> color
             then painted.Add((x,y), {painted = tile.painted + 1; color = color})
             else painted
         | None -> painted.Add((x,y), {painted = 1; color = color})
 
-    let nextPoint = 
+    let newDirection =
         match direction with
-        | 0 -> turnLeft droneDirection |> stepOne (x,y)
-        | 1 -> turnRight droneDirection |> stepOne (x,y)
+        | 0 -> turnLeft droneDirection
+        | 1 -> turnRight droneDirection
         | _-> failwith ""
 
-    newPainted, nextPoint
+    newPainted, newDirection |> stepOne (x,y), newDirection
 
-let rec runUntillStop (painted: Map<int*int,Tile>) ((x,y):int*int) (intCompter: Types.ComputerState) (droneDirection: Direction) =
-    let newState = IntComputer.run intCompter [0L]
-    if newState.stop |> not 
-    then runUntillStop painted (x,y) newState droneDirection
-    else painted
+let rec runUntillStop (painted: Map<int*int,Tile>) (position:int*int) (intCompter: Types.ComputerState) (droneDirection: Direction) =
+    let currentColor = getColor painted position |> int64
+    let newState = IntComputer.run intCompter [currentColor]
+    let cColor = newState.output.[0] |> int
+    let cDirection = newState.output.[1] |> int
+    let newPainted,newPos, newDirection = paintAndReturnNextPosition painted position cColor cDirection droneDirection
+    if newState.stop |> not
+    then runUntillStop newPainted newPos newState newDirection
+    else newPainted
 
 [<EntryPoint>]
 let main argv =
     let s1 = {state = ((data.Split ',') |> List.ofSeq |> List.map(int64)); extraState = Map.empty; output = []; relativeBase =  0L; index = 0L; stop = false}
-    let o = IntComputer.run s1 [0L]
-    let o2 = IntComputer.run o [0L]
+    // let startMap = Map.empty
+    // let startTile = {painted = 0; color = 0}
 
-    let startMap = Map.empty
-    let startTile = {painted = 0; color = 1}
+    // let paintedTiles = runUntillStop (startMap.Add((0,0),startTile))(0,0) s1 Up
 
-    let res = runUntillStop (startMap.Add((0,0),startTile))(0,0) s1
+    // printfn "Part1: %A" paintedTiles.Count //2511
 
+    let startMap2 = Map.empty
+    let startTile2 = {painted = 0; color = 1}
+
+    let paintedTiles2 =
+        runUntillStop (startMap2.Add((0,0),startTile2))(0,0) s1 Up
+        |> Map.toList
+        |> List.map(fun (pos,tile) ->
+            pos,tile.color
+        ) |> List.sortBy(fun ((x,y),_) -> Math.Atan2(x |> float,y |> float))
+
+    // paintedTiles2
+    // |> List.fold (fun state ((_,y),color) ->
+    //     if y <> state then printfn ""
+    //     if color = 1 then printf "#" else printf " "
+    //     if y = state then state else y
+    // ) 0 |> ignore
 
     printfn "Hello World from F#!"
     0 // return an integer exit code
