@@ -64,22 +64,22 @@ let rec runUntillStop (painted: Map<int*int,Tile>) (position:int*int) (intCompte
 [<EntryPoint>]
 let main argv =
     let s1 = {state = ((data.Split ',') |> List.ofSeq |> List.map(int64)); extraState = Map.empty; output = []; relativeBase =  0L; index = 0L; stop = false}
-    // let startMap = Map.empty
-    // let startTile = {painted = 0; color = 0}
+    let startMap = Map.empty
+    let startTile = {painted = 0; color = 0}
 
-    // let paintedTiles = runUntillStop (startMap.Add((0,0),startTile))(0,0) s1 Up
+    let paintedTiles = runUntillStop (startMap.Add((0,0),startTile))(0,0) s1 Up
 
-    // printfn "Part1: %A" paintedTiles.Count //2511
+    printfn "Part1: %A" paintedTiles.Count //2511
 
-    let startMap2 = Map.empty
-    let startTile2 = {painted = 0; color = 1}
+    // let startMap2 = Map.empty
+    // let startTile2 = {painted = 0; color = 1}
 
-    let paintedTiles2 =
-        runUntillStop (startMap2.Add((0,0),startTile2))(0,0) s1 Up
-        |> Map.toList
-        |> List.map(fun (pos,tile) ->
-            pos,tile.color
-        ) |> List.sortBy(fun ((x,y),_) -> Math.Atan2(x |> float,y |> float))
+    // let paintedTiles2 =
+    //     runUntillStop (startMap2.Add((0,0),startTile2))(0,0) s1 Up
+    //     |> Map.toList
+    //     |> List.map(fun (pos,tile) ->
+    //         pos,tile.color
+    //     ) |> List.sortBy(fun ((x,y),_) -> Math.Atan2(x |> float,y |> float))
 
     // paintedTiles2
     // |> List.fold (fun state ((_,y),color) ->
