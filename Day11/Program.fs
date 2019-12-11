@@ -71,22 +71,36 @@ let main argv =
 
     printfn "Part1: %A" paintedTiles.Count //2511
 
-    // let startMap2 = Map.empty
-    // let startTile2 = {painted = 0; color = 1}
+    let startMap2 = Map.empty
+    let startTile2 = {painted = 0; color = 1}
 
-    // let paintedTiles2 =
-    //     runUntillStop (startMap2.Add((0,0),startTile2))(0,0) s1 Up
-    //     |> Map.toList
-    //     |> List.map(fun (pos,tile) ->
-    //         pos,tile.color
-    //     ) |> List.sortBy(fun ((x,y),_) -> Math.Atan2(x |> float,y |> float))
+    let paintedTiles2 =
+        runUntillStop (startMap2.Add((0,0),startTile2))(0,0) s1 Up
+    
+    let paintedTilesList = 
+        paintedTiles2 
+        |> Map.toList
+        |> List.map(fun (pos,tile) ->
+            pos,tile.color
+        ) |> List.sortBy(fun ((x,y),_) -> Math.Atan2(x |> float,y |> float))
 
-    // paintedTiles2
-    // |> List.fold (fun state ((_,y),color) ->
-    //     if y <> state then printfn ""
-    //     if color = 1 then printf "#" else printf " "
-    //     if y = state then state else y
-    // ) 0 |> ignore
+    let minX = paintedTilesList |> List.map(fun ((x,_),_) -> x) |> List.min
+    let minY = paintedTilesList |> List.map(fun ((_,y),_) -> y) |> List.min
+    let maxX = paintedTilesList |> List.map(fun ((x,_),_) -> x) |> List.max
+    let maxY = paintedTilesList |> List.map(fun ((_,y),_) -> y) |> List.max
+
+    let spanX = [minX..maxX]
+    let spanY = [minY..maxY] |> List.rev
+
+    spanY 
+    |> List.iter(fun y -> 
+        spanX |> List.iter(fun x ->
+            match paintedTiles2.TryFind (x,y) with
+            | Some tile -> if tile.color = 1 then printf "#" else printf " "
+            | None -> printf " "
+        )
+        printfn ""
+    )
 
     printfn "Hello World from F#!"
     0 // return an integer exit code
