@@ -38,7 +38,7 @@ let run1time (moons: List<Moon>) = calculatePositions moons
 let run10times (moons: List<Moon>) =
     [0..9] |> List.fold(fun state _ ->  calculatePositions state) moons
 
-let runXTimes (times: int) (moons: List<Moon>) =
+let runPart1 (times: int) (moons: List<Moon>) =
     let m = [0..((times / 10) - 1)] |> List.fold(fun moonState _ -> (run10times moonState)) moons
     calculateEnergy m
 
@@ -62,7 +62,7 @@ let main argv =
     let callisto = {name = "callisto"; position = {x= 11;y = 0;z = 11}; velocity = startVelocity}
 
     let moons = [io;europa;ganymede;callisto]
-    let moonsPart1 = runXTimes 1000 moons //12053
+    let moonsPart1 = runPart1 1000 moons //12053
 
     let startSequence = {xSequence = Set.empty; ySequence = Set.empty; zSequence = Set.empty; xStop = false; yStop = false; zStop = false}
 
