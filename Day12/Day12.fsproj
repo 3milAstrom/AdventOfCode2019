@@ -6,10 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Util\Util.fsproj" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <Compile Include="Util.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
