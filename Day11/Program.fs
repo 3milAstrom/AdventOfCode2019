@@ -76,9 +76,9 @@ let main argv =
 
     let paintedTiles2 =
         runUntillStop (startMap2.Add((0,0),startTile2))(0,0) s1 Up
-    
-    let paintedTilesList = 
-        paintedTiles2 
+
+    let paintedTilesList =
+        paintedTiles2
         |> Map.toList
         |> List.map(fun (pos,tile) ->
             pos,tile.color
@@ -92,8 +92,8 @@ let main argv =
     let spanX = [minX..maxX]
     let spanY = [minY..maxY] |> List.rev
 
-    spanY 
-    |> List.iter(fun y -> 
+    spanY
+    |> List.iter(fun y ->
         spanX |> List.iter(fun x ->
             match paintedTiles2.TryFind (x,y) with
             | Some tile -> if tile.color = 1 then printf "#" else printf " "
