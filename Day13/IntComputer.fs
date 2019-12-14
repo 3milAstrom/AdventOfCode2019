@@ -51,7 +51,7 @@ module IntComputer =
                 optcodeReader newState newExtraState input.Tail output relativeBase (index + 2L)
         | 4L ->
             let o = getValue state extraState (index + 1L) relativeBase mode
-            printfn "%A" o
+            //printfn "%A" o
             optcodeReader state extraState input (output @ [o]) relativeBase (index + 2L)
         | 5L ->
             if (getValue state extraState (index + 1L) relativeBase mode) <> 0L
